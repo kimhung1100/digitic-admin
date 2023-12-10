@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import "react-quill/dist/quill.snow.css";
 import { toast } from "react-toastify";
 import * as yup from "yup";
+import axios from "axios";
 import { useFormik } from "formik";
 import { useDispatch, useSelector } from "react-redux";
 import { getBrands } from "../features/brand/brandSlice";
@@ -18,26 +19,33 @@ let schema = yup.object().shape({
   title: yup.string().required("Title is Required"),
   description: yup.string().required("Description is Required"),
   price: yup.number().required("Price is Required"),
-  brand: yup.string().required("Brand is Required"),
-  category: yup.string().required("Category is Required"),
-  tags: yup.string().required("Tag is Required"),
-  color: yup
-    .array()
-    .min(1, "Pick at least one color")
-    .required("Color is Required"),
-  quantity: yup.number().required("Quantity is Required"),
+
+  width: yup.number().required("Width is Required"),
+  length: yup.number().required("Length is Required"),
+  thickness: yup.number().required("Thickness is Required"),
+
+  // brand: yup.string().required("Brand is Required"),
+  // category: yup.string().required("Category is Required"),
+  // tags: yup.string().required("Tag is Required"),
+  // color: yup
+  //   .array()
+  //   .min(1, "Pick at least one color")
+  //   .required("Color is Required"),
+  // quantity: yup.number().required("Quantity is Required"),
 });
 
 const Addproduct = () => {
-  const dispatch = useDispatch();
+  const [title, setTitle] = useState("");
+
   const navigate = useNavigate();
   const [color, setColor] = useState([]);
   const [images, setImages] = useState([]);
+
   console.log(color);
   useEffect(() => {
-    dispatch(getBrands());
-    dispatch(getCategories());
-    dispatch(getColors());
+    // dispatch(getBrands());
+    // dispatch(getCategories());
+    // dispatch(getColors());
   }, []);
 
   const brandState = useSelector((state) => state.brand.brands);
@@ -68,31 +76,85 @@ const Addproduct = () => {
       url: i.url,
     });
   });
+  // # Extracting data for the stored procedure
+  // p_ISBN = data.get('ISBN')
+  // p_title = data.get('title')
+  // p_book_cover = data.get('book_cover')
+  // p_description = data.get('description')
+  // p_dimensions = data.get('dimensions')
+  // p_print_length = data.get('print_length')
+  // p_price = data.get('price')
+  // p_publication_date = data.get('publication_date')
+  // p_publisher = data.get('publisher')
+  // p_author_ids = json.dumps(data.get('author_ids'))
+
+  // p_category_ids = json.dumps(data.get('category_ids'))
+
+  // p_image_links = json.dumps(data.get('image_links'))
 
   useEffect(() => {
     formik.values.color = color ? color : " ";
     formik.values.images = img;
   }, [color, img]);
+
   const formik = useFormik({
     initialValues: {
+      ISBN: "",
       title: "",
       description: "",
+      width: "",
+      length: "",
+      thickness: "",
       price: "",
-      brand: "",
-      category: "",
-      tags: "",
-      color: "",
-      quantity: "",
-      images: "",
+      category1: "",
+      category2: "",
+      images_link1: "",
+      images_link2: "",
+      images_link3: "",
+      book_cover: "",
+      author_id1: "",
+      author_id2: "",
+
+      print_length: "",
+      publication_date: "",
+      publisher: "",
     },
     validationSchema: schema,
     onSubmit: (values) => {
-      dispatch(createProducts(values));
-      formik.resetForm();
+      console.log(values);
+
+      axios
+        .post("http://localhost:5000/books/", {
+          ISBN: values.ISBN,
+          title: values.title,
+          description: values.description,
+          price: values.price,
+          category_ids: [values.category1, values.category2],
+          quantity: values.quantity,
+          images: [
+            values.images_link1,
+            values.images_link2,
+            values.images_link3,
+          ],
+          book_cover: values.book_cover,
+          width: values.width,
+          length: values.length,
+          thickness: values.thickness,
+          author_ids: [values.author_id1, values.author_id2],
+          print_length: values.print_length,
+          publication_date: values.publication_date,
+          publisher: values.publisher,
+        })
+        .then((response) => {
+          console.log(response);
+          alert(response.data.message);
+        });
+
+      // formik.resetForm();
       setColor(null);
-      setTimeout(() => {
-        dispatch(resetState());
-      }, 3000);
+      // setTimeout(() => {
+      //   // dispatch(resetState());
+      // }, 3000);
     },
   });
   const handleColors = (e) => {
@@ -109,6 +171,19 @@ const Addproduct = () => {
         >
           <CustomInput
             type="text"
+            label="Enter Product ISBN "
+            name="ISBN"
+            onChng={formik.handleChange("ISBN")}
+            onBlr={formik.handleBlur("ISBN")}
+            val={formik.values.ISBN}
+          />
+          <div className="error">
+            {formik.touched.ISBN && formik.errors.ISBN}
+          </div>
+          {/* end input */}
+          {/* begin input */}
+          <CustomInput
+            type="text"
             label="Enter Product Title"
             name="title"
             onChng={formik.handleChange("title")}
@@ -118,6 +193,7 @@ const Addproduct = () => {
           <div className="error">
             {formik.touched.title && formik.errors.title}
           </div>
+          {/* end input */}
           <div className="">
             <ReactQuill
               theme="snow"
@@ -140,119 +216,180 @@ const Addproduct = () => {
           <div className="error">
             {formik.touched.price && formik.errors.price}
           </div>
-          <select
-            name="brand"
-            onChange={formik.handleChange("brand")}
-            onBlur={formik.handleBlur("brand")}
-            value={formik.values.brand}
-            className="form-control py-3 mb-3"
-            id=""
-          >
-            <option value="">Select Brand</option>
-            {brandState.map((i, j) => {
-              return (
-                <option key={j} value={i.title}>
-                  {i.title}
-                </option>
-              );
-            })}
-          </select>
+          {/* end input */}
+
+          {/* begin input */}
+          <CustomInput
+            type="text"
+            label="Enter Product Category 1"
+            name="category1"
+            onChng={formik.handleChange}
+            onBlr={formik.handleBlur}
+            val={formik.values.category1}
+          />
           <div className="error">
-            {formik.touched.brand && formik.errors.brand}
-          </div>
-          <select
-            name="category"
-            onChange={formik.handleChange("category")}
-            onBlur={formik.handleBlur("category")}
-            value={formik.values.category}
-            className="form-control py-3 mb-3"
-            id=""
-          >
-            <option value="">Select Category</option>
-            {catState.map((i, j) => {
-              return (
-                <option key={j} value={i.title}>
-                  {i.title}
-                </option>
-              );
-            })}
-          </select>
-          <div className="error">
-            {formik.touched.category && formik.errors.category}
-          </div>
-          <select
-            name="tags"
-            onChange={formik.handleChange("tags")}
-            onBlur={formik.handleBlur("tags")}
-            value={formik.values.tags}
-            className="form-control py-3 mb-3"
-            id=""
-          >
-            <option value="" disabled>
-              Select Category
-            </option>
-            <option value="featured">Featured</option>
-            <option value="popular">Popular</option>
-            <option value="special">Special</option>
-          </select>
-          <div className="error">
-            {formik.touched.tags && formik.errors.tags}
+            {formik.touched.category1 && formik.errors.category1}
           </div>
 
-          <Select
-            mode="multiple"
-            allowClear
-            className="w-100"
-            placeholder="Select colors"
-            defaultValue={color}
-            onChange={(i) => handleColors(i)}
-            options={coloropt}
+          <CustomInput
+            type="text"
+            label="Enter Product Category 2"
+            name="category2"
+            onChng={formik.handleChange}
+            onBlr={formik.handleBlur}
+            val={formik.values.category2}
           />
           <div className="error">
-            {formik.touched.color && formik.errors.color}
+            {formik.touched.category2 && formik.errors.category2}
           </div>
+
+          <CustomInput
+            type="text"
+            label="Enter Product Image Link 1"
+            name="images_link1"
+            onChng={(e) => formik.handleChange(e)}
+            onBlr={formik.handleBlur}
+            val={formik.values.images_link1}
+          />
+          <div className="error">
+            {formik.touched.images_link1 && formik.errors.images_link1}
+          </div>
+
+          <CustomInput
+            type="text"
+            label="Enter Product Image Link 2"
+            name="images_link2"
+            onChng={(e) => formik.handleChange(e)}
+            onBlr={formik.handleBlur}
+            val={formik.values.images_link2}
+          />
+          <div className="error">
+            {formik.touched.images_link2 && formik.errors.images_link2}
+          </div>
+
+          <CustomInput
+            type="text"
+            label="Enter Product Image Link 3"
+            name="images_link3"
+            onChng={(e) => formik.handleChange(e)}
+            onBlr={formik.handleBlur}
+            val={formik.values.images_link3}
+          />
+          <div className="error">
+            {formik.touched.images_link3 && formik.errors.images_link3}
+          </div>
+
+          <div className="d-flex gap-3">
+            {/* begin input for width */}
+            <CustomInput
+              type="number"
+              label="Width (cm)"
+              name="width"
+              onChng={formik.handleChange("width")}
+              onBlr={formik.handleBlur("width")}
+              val={formik.values.width}
+            />
+            {/* end input */}
+
+            {/* begin input for length */}
+            <CustomInput
+              type="number"
+              label="Length (cm)"
+              name="length"
+              onChng={formik.handleChange("length")}
+              onBlr={formik.handleBlur("length")}
+              val={formik.values.length}
+            />
+            {/* end input */}
+
+            {/* begin input for thickness */}
+            <CustomInput
+              type="number"
+              label="Thickness (cm)"
+              name="thickness"
+              onChng={formik.handleChange("thickness")}
+              onBlr={formik.handleBlur("thickness")}
+              val={formik.values.thickness}
+            />
+            {/* end input */}
+          </div>
+          <div>
+            <label>Enter Product Book Cover (hardcover/paperback)</label>
+            <select
+              name="book_cover"
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              value={formik.values.book_cover}
+            >
+              <option value="">Select Book Cover</option>
+              <option value="hardcover">Hardcover</option>
+              <option value="paperback">Paperback</option>
+            </select>
+            <div className="error">
+              {formik.touched.book_cover && formik.errors.book_cover}
+            </div>
+          </div>
+
+          <CustomInput
+            type="text"
+            label="Enter Product Author ID 1"
+            name="author_id1"
+            onChng={formik.handleChange}
+            onBlr={formik.handleBlur}
+            val={formik.values.author_id1}
+          />
+          <div className="error">
+            {formik.touched.author_id1 && formik.errors.author_id1}
+          </div>
+
+          <CustomInput
+            type="text"
+            label="Enter Product Author ID 2"
+            name="author_id2"
+            onChng={formik.handleChange}
+            onBlr={formik.handleBlur}
+            val={formik.values.author_id2}
+          />
+          <div className="error">
+            {formik.touched.author_id2 && formik.errors.author_id2}
+          </div>
+
           <CustomInput
             type="number"
-            label="Enter Product Quantity"
-            name="quantity"
-            onChng={formik.handleChange("quantity")}
-            onBlr={formik.handleBlur("quantity")}
-            val={formik.values.quantity}
+            label="Enter Product Print Length "
+            name="print_length"
+            onChng={formik.handleChange("print_length")}
+            onBlr={formik.handleBlur("print_length")}
+            val={formik.values.print_length}
           />
           <div className="error">
-            {formik.touched.quantity && formik.errors.quantity}
+            {formik.touched.print_length && formik.errors.print_length}
           </div>
-          <div className="bg-white border-1 p-5 text-center">
-            <Dropzone
-              onDrop={(acceptedFiles) => dispatch(uploadImg(acceptedFiles))}
-            >
-              {({ getRootProps, getInputProps }) => (
-                <section>
-                  <div {...getRootProps()}>
-                    <input {...getInputProps()} />
-                    <p>
-                      Drag 'n' drop some files here, or click to select files
-                    </p>
-                  </div>
-                </section>
-              )}
-            </Dropzone>
+
+          <CustomInput
+            type="date"
+            label="Enter Product Publication Date "
+            name="publication_date"
+            onChng={formik.handleChange("publication_date")}
+            onBlr={formik.handleBlur("publication_date")}
+            val={formik.values.publication_date}
+          />
+          <div className="error">
+            {formik.touched.publication_date && formik.errors.publication_date}
           </div>
-          <div className="showimages d-flex flex-wrap gap-3">
-            {imgState?.map((i, j) => {
-              return (
-                <div className=" position-relative" key={j}>
-                  <button
-                    type="button"
-                    onClick={() => dispatch(delImg(i.public_id))}
-                    className="btn-close position-absolute"
-                    style={{ top: "10px", right: "10px" }}
-                  ></button>
-                  <img src={i.url} alt="" width={200} height={200} />
-                </div>
-              );
-            })}
+          {/* end input */}
+          <CustomInput
+            type="text"
+            label="Enter Product Publisher "
+            name="publisher"
+            onChng={formik.handleChange("publisher")}
+            onBlr={formik.handleBlur("publisher")}
+            val={formik.values.publisher}
+          />
+          <div className="error">
+            {formik.touched.publisher && formik.errors.publisher}
           </div>
+          {/* end input */}
           <button
             className="btn btn-success border-0 rounded-3 my-5"
             type="submit"
