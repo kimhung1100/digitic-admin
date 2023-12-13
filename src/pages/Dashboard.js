@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { BsArrowDownRight, BsArrowUpRight } from "react-icons/bs";
 import { Column } from "@ant-design/plots";
 import { Table } from "antd";
+
 const columns = [
   {
     title: "SNo",
@@ -17,76 +18,96 @@ const columns = [
   },
   {
     title: "Status",
-    dataIndex: "staus",
+    dataIndex: "status",
   },
 ];
-const data1 = [];
-for (let i = 0; i < 46; i++) {
-  data1.push({
-    key: i,
-    name: `Edward King ${i}`,
-    product: 32,
-    staus: `London, Park Lane no. ${i}`,
-  });
-}
-const Dashboard = () => {
-  const data = [
-    {
-      type: "Jan",
-      sales: 38,
-    },
-    {
-      type: "Feb",
-      sales: 52,
-    },
-    {
-      type: "Mar",
-      sales: 61,
-    },
-    {
-      type: "Apr",
-      sales: 145,
-    },
-    {
-      type: "May",
-      sales: 48,
-    },
-    {
-      type: "Jun",
-      sales: 38,
-    },
-    {
-      type: "July",
-      sales: 38,
-    },
-    {
-      type: "Aug",
-      sales: 38,
-    },
-    {
-      type: "Sept",
-      sales: 38,
-    },
-    {
-      type: "Oct",
-      sales: 38,
-    },
-    {
-      type: "Nov",
-      sales: 38,
-    },
-    {
-      type: "Dec",
-      sales: 38,
-    },
+
+const generateMonthsData = async () => {
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ];
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+
+  const resultData = [];
+
+  for (let i = 0; i < 12; i++) {
+    const monthIndex = i;
+
+    try {
+      const response = await fetch("http://localhost:5000/revenue/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          year: currentYear,
+          month: monthIndex + 1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error fetching data for ${months[monthIndex]}`);
+      }
+
+      const data = await response.json();
+      const sales =
+        parseFloat(
+          data.month_revenue[
+            `GetMonthlyRevenue(${currentYear}, ${monthIndex + 1})`
+          ]
+        ) || 0;
+
+      resultData.push({
+        type: months[monthIndex],
+        sales: sales,
+      });
+    } catch (error) {
+      console.error(error.message);
+      resultData.push({
+        type: months[monthIndex],
+        sales: 0,
+      });
+    }
+  }
+
+  return resultData;
+};
+
+const Dashboard = () => {
+  const [lastTwelveMonthsData, setLastTwelveMonthsData] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await generateMonthsData();
+      setLastTwelveMonthsData(data);
+    };
+
+    fetchData();
+  }, []);
+  const data1 = [];
+  for (let i = 0; i < 46; i++) {
+    data1.push({
+      key: i,
+      name: `Edward King ${i}`,
+      product: 32,
+      status: `London, Park Lane no. ${i}`,
+    });
+  }
   const config = {
-    data,
+    data: lastTwelveMonthsData,
     xField: "type",
     yField: "sales",
-    color: ({ type }) => {
-      return "#ffd333";
-    },
+    color: () => "#ffd333",
     label: {
       position: "middle",
       style: {
@@ -109,6 +130,7 @@ const Dashboard = () => {
       },
     },
   };
+
   return (
     <div>
       <h3 className="mb-4 title">Dashboard</h3>
@@ -148,6 +170,18 @@ const Dashboard = () => {
             </h6>
             <p className="mb-0 desc">Compared To April 2022</p>
           </div>
+        </div>
+      </div>
+      <div className="mt-4">
+        <h3 className="mb-5 title">Income Statics</h3>
+        <div>
+          <Column {...config} />
+        </div>
+      </div>
+      <div className="mt-4">
+        <h3 className="mb-5 title">Recent Orders</h3>
+        <div>
+          <Table columns={columns} dataSource={data1} />
         </div>
       </div>
       <div className="mt-4">
